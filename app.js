@@ -57,32 +57,35 @@ const enhancedPrompt = gptData.choices[0].message.content.trim();
 
 log(`✨ Enhanced Prompt:\n"${enhancedPrompt}"`);
     // ----------------------------------------------------
-    // STEP 2: Generate Image with Fal.ai (Flux Schnell)
-    // ----------------------------------------------------
-    log("\n🎨 Generating Image via Fal.ai (Flux)...");
+// STEP 2: Generate Image using NVIDIA NIM API (FLUX.1-schnell)
+// ----------------------------------------------------
+log("\n🎨 Generating Image via NVIDIA FLUX.1...");
 
-    const imageResponse = await fetch("https://fal.run/fal-ai/flux/schnell", {
-      method: "POST",
-      headers: {
-        "Authorization": `Key ${falKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        prompt: enhancedPrompt,
-        image_size: "landscape_16_9"
-      })
-    });
+const imageResponse = await fetch("https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux1-schnell", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${nvidiaKey}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    prompt: enhancedPrompt,
+    mode: "base"
+  })
+});
 
-    if (!imageResponse.ok) throw new Error(`Fal Image Error: ${imageResponse.statusText}`);
-    const imageData = await imageResponse.json();
-    const imageUrl = imageData.images[0].url;
+if (!imageResponse.ok) throw new Error(`NVIDIA Image Error: ${imageResponse.statusText}`);
 
-    log(`🖼️ Image Generated!`);
-    document.getElementById("imageOutput").innerHTML = `
-      <h3>Generated Base Image</h3>
-      <img src="${imageUrl}" alt="Generated AI Image" />
-    `;
+const imageData = await imageResponse.json();
+// NVIDIA returns base64 image data in imageData.b64_json or image URL
+const imageSrc = imageData.b64_json 
+  ? `data:image/jpeg;base64,${imageData.b64_json}` 
+  : imageData.artifacts[0].base64;
 
+log(`🖼️ Image Generated via NVIDIA!`);
+document.getElementById("imageOutput").innerHTML = `
+  <h3>Generated Base Image (NVIDIA FLUX)</h3>
+  <img src="${imageSrc}" alt="Generated AI Image" />
+`;
     // ----------------------------------------------------
     // STEP 3: Animate Image to Video (Luma Dream Machine)
     // ----------------------------------------------------
