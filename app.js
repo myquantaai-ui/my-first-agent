@@ -25,32 +25,37 @@ async function startAgent() {
   document.getElementById("videoOutput").innerHTML = "";
 
   try {
-    // ----------------------------------------------------
-    // STEP 1: Enhance Prompt with OpenAI
-    // ----------------------------------------------------
-    setStatus("🤖 Agent is refining prompt using GPT-4o-mini...");
+    // STEP 1: Enhance Prompt using NVIDIA NIM API
+const nvidiaKey = document.getElementById("nvidiaKey").value.trim();
 
-    const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openaiKey}`,
-        "Content-Type": "application/json"
+setStatus("🤖 Agent is refining prompt using NVIDIA Nemotron...");
+
+const gptResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${nvidiaKey}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "meta/llama-3.1-40b-instruct", // Or "nvidia/nemotron-4-340b-instruct"
+    messages: [
+      { 
+        role: "system", 
+        content: "You are an expert AI prompt engineer. Turn simple ideas into highly detailed, cinematic, high-quality image prompts. Return ONLY the enhanced prompt string." 
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are an expert AI prompt engineer. Turn simple ideas into highly detailed, cinematic, high-quality image prompts. Return ONLY the enhanced prompt string." },
-          { role: "user", content: userPrompt }
-        ]
-      })
-    });
+      { role: "user", content: userPrompt }
+    ],
+    temperature: 0.7,
+    max_tokens: 300
+  })
+});
 
-    if (!gptResponse.ok) throw new Error(`OpenAI Error: ${gptResponse.statusText}`);
-    const gptData = await gptResponse.json();
-    const enhancedPrompt = gptData.choices[0].message.content.trim();
+if (!gptResponse.ok) throw new Error(`NVIDIA API Error: ${gptResponse.statusText}`);
 
-    log(`✨ Enhanced Prompt:\n"${enhancedPrompt}"`);
+const gptData = await gptResponse.json();
+const enhancedPrompt = gptData.choices[0].message.content.trim();
 
+log(`✨ Enhanced Prompt:\n"${enhancedPrompt}"`);
     // ----------------------------------------------------
     // STEP 2: Generate Image with Fal.ai (Flux Schnell)
     // ----------------------------------------------------
